@@ -1,0 +1,8 @@
+{
+  "name": "Remix SIM BK Pro - Sistem Informasi Bimbingan Konseling",
+  "description": "Aplikasi manajemen Guru BK profesional: Presensi siswa, Laporan permasalahan per anak, Jurnal konseling, dan Surat perizinan KBM/kegiatan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
