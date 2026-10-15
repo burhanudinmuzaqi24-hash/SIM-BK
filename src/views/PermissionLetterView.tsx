@@ -48,6 +48,7 @@ interface PermissionLetterViewProps {
   onAddLetter: (letter: Omit<PermissionLetter, 'id'>) => void;
   onUpdateLetter?: (id: string, updated: Partial<PermissionLetter>) => void;
   onDeleteLetter: (id: string) => void;
+  onDeleteMultipleLetters?: (ids: string[]) => void;
   onPrintLetter: (letter: PermissionLetter) => void;
   initialStudentId?: string;
   autoOpenCreate?: boolean;
@@ -348,6 +349,60 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
       return matchSearch && matchType;
     });
   }, [letters, students, searchQuery, typeFilter]);
+
+  // Multi-select & Batch Delete States for Tab 1
+  const [selectedLetterIds, setSelectedLetterIds] = useState<string[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: 'single' | 'multiple';
+    letter?: PermissionLetter;
+    count?: number;
+    ids?: string[];
+  } | null>(null);
+
+  const isAllFilteredSelected =
+    filteredLetters.length > 0 &&
+    filteredLetters.every((l) => selectedLetterIds.includes(l.id));
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedLetterIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAllFiltered = () => {
+    if (isAllFilteredSelected) {
+      const filteredIdSet = new Set(filteredLetters.map((l) => l.id));
+      setSelectedLetterIds((prev) => prev.filter((id) => !filteredIdSet.has(id)));
+    } else {
+      const merged = Array.from(
+        new Set([...selectedLetterIds, ...filteredLetters.map((l) => l.id)])
+      );
+      setSelectedLetterIds(merged);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedLetterIds([]);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+
+    if (deleteTarget.type === 'single' && deleteTarget.letter) {
+      const targetId = deleteTarget.letter.id;
+      onDeleteLetter(targetId);
+      setSelectedLetterIds((prev) => prev.filter((id) => id !== targetId));
+    } else if (deleteTarget.type === 'multiple' && deleteTarget.ids) {
+      if (onDeleteMultipleLetters) {
+        onDeleteMultipleLetters(deleteTarget.ids);
+      } else {
+        deleteTarget.ids.forEach((id) => onDeleteLetter(id));
+      }
+      setSelectedLetterIds([]);
+    }
+
+    setDeleteTarget(null);
+  };
 
   // =========================================================================
   // REKAPITULASI SURAT PER KODE (TAB 2)
@@ -774,6 +829,28 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
                 <option value="BK-SPKS">BK-SPKS : Pernyataan & Komitmen Siswa</option>
                 <option value="BK-SPO">BK-SPO : Panggilan Orang Tua</option>
               </select>
+
+              <button
+                type="button"
+                onClick={handleToggleSelectAllFiltered}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer select-none ${
+                  isAllFilteredSelected
+                    ? 'bg-emerald-100 border-emerald-300 text-emerald-900 font-bold'
+                    : selectedLetterIds.length > 0
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                    : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+                }`}
+                title="Pilih atau batalkan pilihan semua dokumen surat"
+              >
+                <CheckSquare className="w-3.5 h-3.5 text-emerald-800" />
+                <span>
+                  {isAllFilteredSelected
+                    ? 'Batal Pilih Semua'
+                    : selectedLetterIds.length > 0
+                    ? `${selectedLetterIds.length} Surat Terpilih`
+                    : 'Pilih Semua Surat'}
+                </span>
+              </button>
             </div>
 
             <div className="text-slate-500 text-xs font-mono tabular-nums">
@@ -781,12 +858,80 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
             </div>
           </div>
 
+          {/* Floating / Sticky Bulk Action Banner */}
+          {selectedLetterIds.length > 0 && (
+            <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white p-3.5 px-5 rounded-xl shadow-lg border border-emerald-800/40 flex flex-wrap items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 shrink-0">
+                  <CheckSquare className="w-4 h-4" />
+                </span>
+                <div>
+                  <div className="text-xs font-bold flex items-center gap-2">
+                    <span className="text-sm text-white font-extrabold">{selectedLetterIds.length} Surat Terpilih</span>
+                    <span className="text-[11px] font-medium text-emerald-300 bg-emerald-900/80 px-2 py-0.5 rounded-full border border-emerald-700/60">
+                      {selectedLetterIds.length === letters.length
+                        ? 'Seluruh arsip surat'
+                        : `${selectedLetterIds.length} dari ${letters.length} dokumen`}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    Pilih dokumen surat untuk dihapus dari register surat keluar sekaligus.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                {!isAllFilteredSelected && (
+                  <button
+                    type="button"
+                    onClick={handleToggleSelectAllFiltered}
+                    className="px-3 py-1.5 text-xs font-semibold bg-emerald-800/80 hover:bg-emerald-700 text-emerald-100 rounded-lg transition-colors cursor-pointer border border-emerald-600/50"
+                  >
+                    Pilih Semua {filteredLetters.length} Hasil Filter
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleClearSelection}
+                  className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors cursor-pointer border border-slate-600"
+                >
+                  Batal Pilih
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeleteTarget({
+                      type: 'multiple',
+                      count: selectedLetterIds.length,
+                      ids: selectedLetterIds,
+                    });
+                  }}
+                  className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg shadow-sm transition-all cursor-pointer active:scale-95"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Hapus {selectedLetterIds.length} Surat Sekaligus</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Letters Table */}
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left">
                 <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
                   <tr>
+                    <th className="py-3 px-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isAllFilteredSelected}
+                        onChange={handleToggleSelectAllFiltered}
+                        className="rounded text-emerald-800 focus:ring-emerald-700 w-4 h-4 cursor-pointer"
+                        title="Pilih semua surat"
+                      />
+                    </th>
                     <th className="py-3 px-4">No. Surat & Tanggal</th>
                     <th className="py-3 px-4">Kode & Jenis Dokumen</th>
                     <th className="py-3 px-4">Nama Siswa / Kelas</th>
@@ -798,7 +943,7 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
                 <tbody className="divide-y divide-slate-100">
                   {filteredLetters.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-500 text-xs">
+                      <td colSpan={7} className="py-8 text-center text-slate-500 text-xs">
                         Tidak ada dokumen surat yang sesuai dengan filter.
                       </td>
                     </tr>
@@ -806,8 +951,23 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
                     filteredLetters.map((letter) => {
                       const student = students.find((s) => s.id === letter.studentId);
                       const stdCode = getStandardLetterCode(letter.type);
+                      const isSelected = selectedLetterIds.includes(letter.id);
                       return (
-                        <tr key={letter.id} className="hover:bg-slate-50/70 transition-colors">
+                        <tr
+                          key={letter.id}
+                          className={`transition-colors ${
+                            isSelected ? 'bg-emerald-50/70' : 'hover:bg-slate-50/70'
+                          }`}
+                        >
+                          <td className="py-3 px-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleToggleSelect(letter.id)}
+                              className="rounded text-emerald-800 focus:ring-emerald-700 w-4 h-4 cursor-pointer"
+                              title="Pilih surat ini"
+                            />
+                          </td>
                           <td className="py-3 px-4 whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-slate-900 font-mono tabular-nums">
@@ -888,11 +1048,7 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
                                 <span>Cetak</span>
                               </button>
                               <button
-                                onClick={() => {
-                                  if (window.confirm('Hapus dokumen surat ini?')) {
-                                    onDeleteLetter(letter.id);
-                                  }
-                                }}
+                                onClick={() => setDeleteTarget({ type: 'single', letter })}
                                 className="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
                                 title="Hapus"
                               >
@@ -1230,11 +1386,7 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  if (window.confirm('Hapus dokumen surat ini?')) {
-                                    onDeleteLetter(letter.id);
-                                  }
-                                }}
+                                onClick={() => setDeleteTarget({ type: 'single', letter })}
                                 className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors cursor-pointer"
                                 title="Hapus Dokumen"
                               >
@@ -2315,6 +2467,86 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
               >
                 Simpan Nomor Baru
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Dokumen Surat (Single atau Bulk) */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6" />
+              </div>
+
+              <h3 className="text-base font-bold text-slate-900 text-center">
+                {deleteTarget.type === 'single'
+                  ? `Hapus Dokumen Surat "${deleteTarget.letter?.letterNumber}"?`
+                  : `Hapus ${deleteTarget.ids?.length || 0} Dokumen Surat Sekaligus?`}
+              </h3>
+
+              <p className="text-xs text-slate-500 text-center mt-2 leading-relaxed">
+                {deleteTarget.type === 'single' ? (
+                  <>
+                    Arsip surat perizinan ini akan dihapus dari buku agenda register surat keluar.
+                  </>
+                ) : (
+                  <>
+                    Anda akan menghapus sebanyak <strong className="text-rose-600 font-bold">{deleteTarget.ids?.length} dokumen surat</strong> sekaligus. Data yang dihapus tidak dapat dipulihkan.
+                  </>
+                )}
+              </p>
+
+              {deleteTarget.type === 'multiple' && deleteTarget.ids && (
+                <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-48 overflow-y-auto text-xs space-y-1.5">
+                  <div className="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1 flex items-center justify-between">
+                    <span>Surat yang akan dihapus:</span>
+                    <span className="font-mono text-rose-600 font-bold">{deleteTarget.ids.length} surat</span>
+                  </div>
+                  {letters
+                    .filter((l) => deleteTarget.ids?.includes(l.id))
+                    .map((letItem, i) => {
+                      const st = students.find((s) => s.id === letItem.studentId);
+                      return (
+                        <div
+                          key={letItem.id}
+                          className="flex items-center justify-between text-slate-700 py-1 px-1.5 rounded hover:bg-slate-100 border-b border-slate-100 last:border-b-0"
+                        >
+                          <span className="font-medium truncate max-w-[200px] font-mono text-[11px]">
+                            {i + 1}. {letItem.letterNumber}
+                          </span>
+                          <span className="text-slate-500 text-[11px] truncate max-w-[150px] bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                            {st?.name || 'Siswa'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+
+              <div className="mt-6 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  className="flex-1 py-2.5 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl border border-slate-300 transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>
+                    {deleteTarget.type === 'multiple'
+                      ? `Ya, Hapus ${deleteTarget.ids?.length} Surat`
+                      : 'Ya, Hapus Surat Ini'}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

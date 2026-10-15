@@ -13,6 +13,7 @@ import {
   Clock,
   ChevronRight,
   ShieldAlert,
+  CheckSquare,
 } from 'lucide-react';
 import {
   ProblemRecord,
@@ -29,6 +30,7 @@ interface ProblemReportViewProps {
   onAddProblem: (record: Omit<ProblemRecord, 'id'>) => void;
   onUpdateProblem: (id: string, updated: Partial<ProblemRecord>) => void;
   onDeleteProblem: (id: string) => void;
+  onDeleteMultipleProblems?: (ids: string[]) => void;
   onStartCounselingForStudent: (student: Student) => void;
   onIssueParentSummons: (student: Student, problemTitle: string) => void;
 }
@@ -39,6 +41,7 @@ export const ProblemReportView: React.FC<ProblemReportViewProps> = ({
   onAddProblem,
   onUpdateProblem,
   onDeleteProblem,
+  onDeleteMultipleProblems,
   onStartCounselingForStudent,
   onIssueParentSummons,
 }) => {
@@ -89,6 +92,66 @@ export const ProblemReportView: React.FC<ProblemReportViewProps> = ({
       return matchSearch && matchDomain && matchSeverity && matchStatus;
     });
   }, [problems, students, searchQuery, domainFilter, severityFilter, statusFilter]);
+
+  // Multi-select & Batch Delete States
+  const [selectedProblemIds, setSelectedProblemIds] = useState<string[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: 'single' | 'multiple';
+    problem?: ProblemRecord;
+    count?: number;
+    ids?: string[];
+  } | null>(null);
+
+  const isAllFilteredSelected =
+    filteredProblems.length > 0 &&
+    filteredProblems.every((p) => selectedProblemIds.includes(p.id));
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedProblemIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAllFiltered = () => {
+    if (isAllFilteredSelected) {
+      const filteredIdSet = new Set(filteredProblems.map((p) => p.id));
+      setSelectedProblemIds((prev) => prev.filter((id) => !filteredIdSet.has(id)));
+    } else {
+      const merged = Array.from(
+        new Set([...selectedProblemIds, ...filteredProblems.map((p) => p.id)])
+      );
+      setSelectedProblemIds(merged);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedProblemIds([]);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+
+    if (deleteTarget.type === 'single' && deleteTarget.problem) {
+      const targetId = deleteTarget.problem.id;
+      onDeleteProblem(targetId);
+      setSelectedProblemIds((prev) => prev.filter((id) => id !== targetId));
+      if (selectedProblemDetail?.id === targetId) {
+        setSelectedProblemDetail(null);
+      }
+    } else if (deleteTarget.type === 'multiple' && deleteTarget.ids) {
+      if (onDeleteMultipleProblems) {
+        onDeleteMultipleProblems(deleteTarget.ids);
+      } else {
+        deleteTarget.ids.forEach((id) => onDeleteProblem(id));
+      }
+      setSelectedProblemIds([]);
+      if (selectedProblemDetail && deleteTarget.ids.includes(selectedProblemDetail.id)) {
+        setSelectedProblemDetail(null);
+      }
+    }
+
+    setDeleteTarget(null);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -239,12 +302,93 @@ export const ProblemReportView: React.FC<ProblemReportViewProps> = ({
             <option value="Terselesaikan">Terselesaikan</option>
             <option value="Alih Tangan / Referal">Alih Tangan / Referal</option>
           </select>
+
+          <button
+            type="button"
+            onClick={handleToggleSelectAllFiltered}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer select-none ${
+              isAllFilteredSelected
+                ? 'bg-rose-100 border-rose-300 text-rose-900 font-bold'
+                : selectedProblemIds.length > 0
+                ? 'bg-rose-50 border-rose-300 text-rose-800'
+                : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+            }`}
+            title="Pilih atau batalkan pilihan semua kasus"
+          >
+            <CheckSquare className="w-3.5 h-3.5 text-rose-700" />
+            <span>
+              {isAllFilteredSelected
+                ? 'Batal Pilih Semua'
+                : selectedProblemIds.length > 0
+                ? `${selectedProblemIds.length} Kasus Terpilih`
+                : 'Pilih Semua Kasus'}
+            </span>
+          </button>
         </div>
 
         <div className="text-slate-500 text-xs font-mono tabular-nums">
           Ditemukan: <strong>{filteredProblems.length}</strong> kasus
         </div>
       </div>
+
+      {/* Floating / Sticky Bulk Action Banner */}
+      {selectedProblemIds.length > 0 && (
+        <div className="bg-gradient-to-r from-slate-900 via-rose-950 to-slate-900 text-white p-3.5 px-5 rounded-xl shadow-lg border border-rose-800/40 flex flex-wrap items-center justify-between gap-3 animate-in fade-in slide-in-from-top-1">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-rose-600/30 border border-rose-500/40 text-rose-300 shrink-0">
+              <CheckSquare className="w-4 h-4" />
+            </span>
+            <div>
+              <div className="text-xs font-bold flex items-center gap-2">
+                <span className="text-sm text-white font-extrabold">{selectedProblemIds.length} Kasus Terpilih</span>
+                <span className="text-[11px] font-medium text-rose-300 bg-rose-900/80 px-2 py-0.5 rounded-full border border-rose-700/60">
+                  {selectedProblemIds.length === problems.length
+                    ? 'Seluruh arsip kasus'
+                    : `${selectedProblemIds.length} dari ${problems.length} kasus`}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-0.5">
+                Centang/hapus centang kasus untuk memilih data yang ingin dihapus sekaligus.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {!isAllFilteredSelected && (
+              <button
+                type="button"
+                onClick={handleToggleSelectAllFiltered}
+                className="px-3 py-1.5 text-xs font-semibold bg-rose-900/80 hover:bg-rose-800 text-rose-100 rounded-lg transition-colors cursor-pointer border border-rose-700/50"
+              >
+                Pilih Semua {filteredProblems.length} Hasil Filter
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors cursor-pointer border border-slate-600"
+            >
+              Batal Pilih
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteTarget({
+                  type: 'multiple',
+                  count: selectedProblemIds.length,
+                  ids: selectedProblemIds,
+                });
+              }}
+              className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white rounded-lg shadow-sm transition-all cursor-pointer active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Hapus {selectedProblemIds.length} Kasus Sekaligus</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Problem Cards List */}
       <div className="space-y-3">
@@ -255,14 +399,26 @@ export const ProblemReportView: React.FC<ProblemReportViewProps> = ({
         ) : (
           filteredProblems.map((prob) => {
             const student = students.find((s) => s.id === prob.studentId);
+            const isSelected = selectedProblemIds.includes(prob.id);
             return (
               <div
                 key={prob.id}
-                className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs hover:border-slate-300 transition-colors space-y-3"
+                className={`bg-white border rounded-xl p-5 shadow-xs transition-all space-y-3 ${
+                  isSelected
+                    ? 'border-rose-400 ring-2 ring-rose-400/40 bg-rose-50/20'
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
                     <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleToggleSelect(prob.id)}
+                        className="rounded text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer mr-0.5"
+                        title="Pilih kasus ini"
+                      />
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
                         prob.severity === 'Berat'
                           ? 'bg-rose-100 text-rose-800 border border-rose-200'
@@ -285,7 +441,7 @@ export const ProblemReportView: React.FC<ProblemReportViewProps> = ({
                       )}
                     </div>
 
-                    <h3 className="text-sm font-bold text-slate-900 mt-1">
+                    <h3 className="text-sm font-bold text-slate-900 mt-1 pl-6">
                       {prob.title}
                     </h3>
                   </div>
@@ -357,11 +513,7 @@ export const ProblemReportView: React.FC<ProblemReportViewProps> = ({
                     )}
 
                     <button
-                      onClick={() => {
-                        if (window.confirm('Hapus laporan permasalahan ini?')) {
-                          onDeleteProblem(prob.id);
-                        }
-                      }}
+                      onClick={() => setDeleteTarget({ type: 'single', problem: prob })}
                       className="p-1.5 text-slate-400 hover:text-rose-600 rounded transition-colors cursor-pointer"
                       title="Hapus Kasus"
                     >
@@ -488,16 +640,7 @@ export const ProblemReportView: React.FC<ProblemReportViewProps> = ({
             <div className="p-4 border-t border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-3 shrink-0">
               <button
                 type="button"
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      `Hapus seluruh berkas kasus "${selectedProblemDetail.title}"? Tindakan ini untuk mengoreksi data laporan yang keliru atau dibatalkan.`
-                    )
-                  ) {
-                    onDeleteProblem(selectedProblemDetail.id);
-                    setSelectedProblemDetail(null);
-                  }
-                }}
+                onClick={() => setDeleteTarget({ type: 'single', problem: selectedProblemDetail })}
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 hover:text-white bg-rose-50 hover:bg-rose-600 rounded-lg border border-rose-200 transition-colors cursor-pointer"
                 title="Hapus laporan kasus untuk koreksi data"
               >
@@ -733,6 +876,86 @@ export const ProblemReportView: React.FC<ProblemReportViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Kasus / Permasalahan Siswa (Single atau Bulk) */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-6 h-6" />
+              </div>
+
+              <h3 className="text-base font-bold text-slate-900 text-center">
+                {deleteTarget.type === 'single'
+                  ? `Hapus Laporan Kasus "${deleteTarget.problem?.title}"?`
+                  : `Hapus ${deleteTarget.ids?.length || 0} Laporan Kasus Sekaligus?`}
+              </h3>
+
+              <p className="text-xs text-slate-500 text-center mt-2 leading-relaxed">
+                {deleteTarget.type === 'single' ? (
+                  <>
+                    Laporan permasalahan siswa ini akan dihapus permanen dari arsip buku catatan BK.
+                  </>
+                ) : (
+                  <>
+                    Anda akan menghapus sebanyak <strong className="text-rose-600 font-bold">{deleteTarget.ids?.length} laporan kasus</strong> sekaligus. Data yang dihapus tidak dapat dipulihkan.
+                  </>
+                )}
+              </p>
+
+              {deleteTarget.type === 'multiple' && deleteTarget.ids && (
+                <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-48 overflow-y-auto text-xs space-y-1.5">
+                  <div className="text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1 flex items-center justify-between">
+                    <span>Kasus yang akan dihapus:</span>
+                    <span className="font-mono text-rose-600 font-bold">{deleteTarget.ids.length} kasus</span>
+                  </div>
+                  {problems
+                    .filter((p) => deleteTarget.ids?.includes(p.id))
+                    .map((prob, i) => {
+                      const st = students.find((s) => s.id === prob.studentId);
+                      return (
+                        <div
+                          key={prob.id}
+                          className="flex items-center justify-between text-slate-700 py-1 px-1.5 rounded hover:bg-slate-100 border-b border-slate-100 last:border-b-0"
+                        >
+                          <span className="font-medium truncate max-w-[200px]">
+                            {i + 1}. {prob.title}
+                          </span>
+                          <span className="text-slate-500 text-[11px] font-mono shrink-0 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                            {st?.name || 'Siswa'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+
+              <div className="mt-6 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  className="flex-1 py-2.5 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-xl border border-slate-300 transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-2.5 px-4 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 active:scale-95"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>
+                    {deleteTarget.type === 'multiple'
+                      ? `Ya, Hapus ${deleteTarget.ids?.length} Kasus`
+                      : 'Ya, Hapus Kasus Ini'}
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

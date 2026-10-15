@@ -1664,7 +1664,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                             {item.student.className}
                           </td>
                           <td className="py-2.5 px-4 font-mono text-slate-500">
-                            {item.student.nisn}
+                            {item.student.nisn || '-'}
                           </td>
                           <td className="py-2.5 px-4 text-center font-mono font-bold text-amber-700">
                             {item.late}x
@@ -1936,7 +1936,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                             <td className="py-2.5 px-3">
                               <div className="font-bold text-slate-900">{row.student.name}</div>
                               <div className="text-[10px] text-slate-500 font-mono">
-                                NISN: {row.student.nisn}
+                                NISN: {row.student.nisn || '-'}
                               </div>
                             </td>
                             <td className="py-2.5 px-3 font-semibold text-slate-700">
@@ -2043,7 +2043,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                       )}
                     </div>
                     <p className="text-xs text-slate-500 font-mono">
-                      NISN: {individualStudentData.student.nisn} · Kelas{' '}
+                      {individualStudentData.student.nisn ? `NISN: ${individualStudentData.student.nisn} · ` : ''}Kelas{' '}
                       {individualStudentData.student.className} · Wali:{' '}
                       {individualStudentData.student.homeroomTeacher || '-'}
                     </p>
@@ -2311,7 +2311,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                   <option value="">-- Pilih Peserta Didik --</option>
                   {students.map((st) => (
                     <option key={st.id} value={st.id}>
-                      {st.name} - Kelas {st.className} (NISN: {st.nisn})
+                      {st.name} - Kelas {st.className}{st.nisn ? ` (NISN: ${st.nisn})` : ''}
                     </option>
                   ))}
                 </select>
@@ -2655,7 +2655,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                     <tr key={row.student.id} className="border-b border-slate-200">
                       <td className="border border-slate-300 py-1 px-1.5 text-center font-mono">{idx + 1}</td>
                       <td className="border border-slate-300 py-1 px-2 font-semibold text-slate-900">{row.student.name}</td>
-                      <td className="border border-slate-300 py-1 px-2 text-center font-mono">{row.student.nisn}</td>
+                      <td className="border border-slate-300 py-1 px-2 text-center font-mono">{row.student.nisn || '-'}</td>
                       <td className="border border-slate-300 py-1 px-2 text-center font-semibold">{row.student.className}</td>
                       <td className="border border-slate-300 py-1 px-1 text-center font-mono">{row.sickCount || '-'}</td>
                       <td className="border border-slate-300 py-1 px-1 text-center font-mono">{row.leaveCount || '-'}</td>

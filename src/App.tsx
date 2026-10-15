@@ -139,6 +139,11 @@ export default function App() {
     setStudents((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const handleDeleteMultipleStudents = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setStudents((prev) => prev.filter((s) => !idSet.has(s.id)));
+  };
+
   const handleToggleWatchlist = (id: string) => {
     setStudents((prev) =>
       prev.map((s) => (s.id === id ? { ...s, isWatchlist: !s.isWatchlist } : s))
@@ -164,6 +169,11 @@ export default function App() {
     setAttendance((prev) => prev.filter((a) => a.id !== id));
   };
 
+  const handleDeleteMultipleAttendance = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setAttendance((prev) => prev.filter((a) => !idSet.has(a.id)));
+  };
+
   // Handlers for Problems
   const handleAddProblem = (newProb: Omit<ProblemRecord, 'id'>) => {
     const prob: ProblemRecord = {
@@ -183,6 +193,11 @@ export default function App() {
     setProblems((prev) => prev.filter((p) => p.id !== id));
   };
 
+  const handleDeleteMultipleProblems = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setProblems((prev) => prev.filter((p) => !idSet.has(p.id)));
+  };
+
   // Handlers for Counseling
   const handleAddCounseling = (newRec: Omit<CounselingRecord, 'id'>) => {
     const rec: CounselingRecord = {
@@ -196,6 +211,11 @@ export default function App() {
     setCounseling((prev) => prev.filter((c) => c.id !== id));
   };
 
+  const handleDeleteMultipleCounseling = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setCounseling((prev) => prev.filter((c) => !idSet.has(c.id)));
+  };
+
   // Handlers for Letters
   const handleAddLetter = (newLetter: Omit<PermissionLetter, 'id'>) => {
     const letter: PermissionLetter = {
@@ -207,6 +227,11 @@ export default function App() {
 
   const handleDeleteLetter = (id: string) => {
     setLetters((prev) => prev.filter((l) => l.id !== id));
+  };
+
+  const handleDeleteMultipleLetters = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setLetters((prev) => prev.filter((l) => !idSet.has(l.id)));
   };
 
   const handleUpdateLetter = (id: string, updated: Partial<PermissionLetter>) => {
@@ -280,6 +305,11 @@ export default function App() {
     setAlumni((prev) => prev.filter((a) => a.id !== id));
   };
 
+  const handleDeleteMultipleAlumni = (ids: string[]) => {
+    const idSet = new Set(ids);
+    setAlumni((prev) => prev.filter((a) => !idSet.has(a.id)));
+  };
+
   const handleResetData = () => {
     resetAllData();
     window.location.reload();
@@ -324,6 +354,7 @@ export default function App() {
             onAddAttendance={handleAddAttendance}
             onUpdateAttendance={handleUpdateAttendance}
             onDeleteAttendance={handleDeleteAttendance}
+            onDeleteMultipleAttendance={handleDeleteMultipleAttendance}
             onStartCounselingForStudent={handleStartCounselingForStudent}
             onIssueLetterForStudent={handleIssueLetterForStudent}
             initialStudentId={
@@ -345,6 +376,7 @@ export default function App() {
             onAddProblem={handleAddProblem}
             onUpdateProblem={handleUpdateProblem}
             onDeleteProblem={handleDeleteProblem}
+            onDeleteMultipleProblems={handleDeleteMultipleProblems}
             onStartCounselingForStudent={handleStartCounselingForStudent}
             onIssueParentSummons={handleIssueParentSummons}
           />
@@ -357,6 +389,7 @@ export default function App() {
             profile={profile}
             onAddCounseling={handleAddCounseling}
             onDeleteCounseling={handleDeleteCounseling}
+            onDeleteMultipleCounseling={handleDeleteMultipleCounseling}
             onPrintCounseling={(rec) => setSelectedCounselingForPrint(rec)}
             initialStudentId={
               quickActionState.targetTab === 'counseling'
@@ -378,6 +411,7 @@ export default function App() {
             onAddLetter={handleAddLetter}
             onUpdateLetter={handleUpdateLetter}
             onDeleteLetter={handleDeleteLetter}
+            onDeleteMultipleLetters={handleDeleteMultipleLetters}
             onPrintLetter={(letItem) => setSelectedLetterForPrint(letItem)}
             initialStudentId={
               quickActionState.targetTab === 'letters'
@@ -398,6 +432,7 @@ export default function App() {
             onAddStudent={handleAddStudent}
             onUpdateStudent={handleUpdateStudent}
             onDeleteStudent={handleDeleteStudent}
+            onDeleteMultipleStudents={handleDeleteMultipleStudents}
             onToggleWatchlist={handleToggleWatchlist}
             onQuickCounseling={handleQuickCounseling}
             onQuickLetter={handleQuickLetter}
@@ -412,6 +447,7 @@ export default function App() {
             onAddAlumni={handleAddAlumni}
             onUpdateAlumni={handleUpdateAlumni}
             onDeleteAlumni={handleDeleteAlumni}
+            onDeleteMultipleAlumni={handleDeleteMultipleAlumni}
             onUpdateProfile={(updated) => setProfile((prev) => ({ ...prev, ...updated }))}
             onOpenSettings={() => setIsSettingsOpen(true)}
           />

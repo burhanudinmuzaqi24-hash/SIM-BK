@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   HelpCircle,
   BookOpen,
+  CheckSquare,
 } from 'lucide-react';
 import {
   Alumni,
@@ -40,6 +41,7 @@ interface AlumniViewProps {
   onAddAlumni: (alumni: Omit<Alumni, 'id'>) => void;
   onUpdateAlumni: (id: string, updated: Partial<Alumni>) => void;
   onDeleteAlumni: (id: string) => void;
+  onDeleteMultipleAlumni?: (ids: string[]) => void;
   onUpdateProfile?: (updated: Partial<SchoolProfile>) => void;
   onOpenSettings?: () => void;
 }
@@ -50,6 +52,7 @@ export const AlumniView: React.FC<AlumniViewProps> = ({
   onAddAlumni,
   onUpdateAlumni,
   onDeleteAlumni,
+  onDeleteMultipleAlumni,
   onUpdateProfile,
   onOpenSettings,
 }) => {
@@ -242,10 +245,68 @@ export const AlumniView: React.FC<AlumniViewProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const handleDeleteConfirm = (id: string, name: string) => {
-    if (window.confirm(`Hapus data alumni ${name}? Data ini akan dihapus dari rekap tracer study.`)) {
-      onDeleteAlumni(id);
+  // Multi-select & Batch Delete States
+  const [selectedAlumniIds, setSelectedAlumniIds] = useState<string[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: 'single' | 'multiple';
+    alumni?: Alumni;
+    count?: number;
+    ids?: string[];
+  } | null>(null);
+
+  const isAllFilteredSelected =
+    filteredAlumni.length > 0 &&
+    filteredAlumni.every((a) => selectedAlumniIds.includes(a.id));
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedAlumniIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleToggleSelectAllFiltered = () => {
+    if (isAllFilteredSelected) {
+      const filteredIdSet = new Set(filteredAlumni.map((a) => a.id));
+      setSelectedAlumniIds((prev) => prev.filter((id) => !filteredIdSet.has(id)));
+    } else {
+      const merged = Array.from(
+        new Set([...selectedAlumniIds, ...filteredAlumni.map((a) => a.id)])
+      );
+      setSelectedAlumniIds(merged);
     }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedAlumniIds([]);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+
+    if (deleteTarget.type === 'single' && deleteTarget.alumni) {
+      const targetId = deleteTarget.alumni.id;
+      onDeleteAlumni(targetId);
+      setSelectedAlumniIds((prev) => prev.filter((id) => id !== targetId));
+      if (selectedAlumniDetail?.id === targetId) {
+        setSelectedAlumniDetail(null);
+      }
+    } else if (deleteTarget.type === 'multiple' && deleteTarget.ids) {
+      if (onDeleteMultipleAlumni) {
+        onDeleteMultipleAlumni(deleteTarget.ids);
+      } else {
+        deleteTarget.ids.forEach((id) => onDeleteAlumni(id));
+      }
+      setSelectedAlumniIds([]);
+      if (selectedAlumniDetail && deleteTarget.ids.includes(selectedAlumniDetail.id)) {
+        setSelectedAlumniDetail(null);
+      }
+    }
+
+    setDeleteTarget(null);
+  };
+
+  const handleDeleteConfirm = (alumni: Alumni) => {
+    setDeleteTarget({ type: 'single', alumni });
   };
 
   const handleOpenAddForm = () => {
