@@ -850,12 +850,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             >
                               {st.name}
                             </button>
-                            <span className="text-[11px] font-mono text-slate-500">
+                            <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/60">
                               Kelas {st.className}
                             </span>
-                            <span className="text-[10px] font-mono text-slate-400">
-                              (NISN: {st.nisn})
-                            </span>
+                            {st.homeroomTeacher && (
+                              <span className="text-[11px] text-slate-500">
+                                Wali: {st.homeroomTeacher}
+                              </span>
+                            )}
                           </div>
 
                           <p className="text-[11px] text-slate-600 line-clamp-1 mt-0.5">

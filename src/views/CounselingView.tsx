@@ -290,12 +290,16 @@ export const CounselingView: React.FC<CounselingViewProps> = ({
                       </span>
                       <span className="text-xs text-slate-400">·</span>
                       <span className="text-xs font-bold text-emerald-900">
-                        Konseli: {student?.name || 'Siswa'} ({student?.className})
+                        Konseli: {student?.name || 'Siswa'} (Kelas {student?.className || '-'})
                       </span>
-                      <span className="text-xs text-slate-400">·</span>
-                      <span className="text-xs text-slate-500 font-mono tabular-nums">
-                        NISN: {student?.nisn || '-'}
-                      </span>
+                      {student?.homeroomTeacher && (
+                        <>
+                          <span className="text-xs text-slate-400">·</span>
+                          <span className="text-xs text-slate-600">
+                            Wali: {student.homeroomTeacher}
+                          </span>
+                        </>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
                       <span>{formatDateIndonesian(record.date)}</span>
@@ -447,7 +451,7 @@ export const CounselingView: React.FC<CounselingViewProps> = ({
                     <option value="">-- Pilih Siswa --</option>
                     {students.map((st) => (
                       <option key={st.id} value={st.id}>
-                        {st.name} ({st.className}) - NISN: {st.nisn}
+                        {st.name} - Kelas {st.className}{st.homeroomTeacher ? ` (Wali: ${st.homeroomTeacher})` : ''}
                       </option>
                     ))}
                   </select>

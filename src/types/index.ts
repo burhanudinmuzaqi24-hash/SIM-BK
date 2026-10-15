@@ -6,10 +6,10 @@ export interface Student {
   name: string;
   className: string;
   gender: Gender;
-  phone: string;
-  parentName: string;
-  parentPhone: string;
-  address: string;
+  phone?: string;
+  parentName?: string;
+  parentPhone?: string;
+  address?: string;
   guardianName?: string;
   homeroomTeacher: string;
   notes?: string;
@@ -176,6 +176,8 @@ export interface PermissionLetter {
   participantList?: string; // Rincian Anggota / Delegasi Tambahan
 }
 
+export type PaperSize = 'A4' | 'A5';
+
 export interface SchoolProfile {
   foundationName?: string;
   schoolCategory?: string;
@@ -200,6 +202,7 @@ export interface SchoolProfile {
   kopFormat?: 'lengkap' | 'blanko' | 'gambar';
   letterheadImageUrl?: string;
   letterheadImageHeight?: number;
+  defaultPaperSize?: PaperSize;
 }
 
 export type AlumniStatus =

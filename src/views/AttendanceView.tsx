@@ -2755,7 +2755,7 @@ export const AttendanceView: React.FC<AttendanceViewProps> = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">NISN / No Induk:</span>
-                    <strong className="text-slate-900 font-mono">{individualStudentData.student.nisn}</strong>
+                    <strong className="text-slate-900 font-mono">{individualStudentData.student.nisn || '-'}</strong>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Kelas / Rombel:</span>

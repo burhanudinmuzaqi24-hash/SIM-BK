@@ -6,6 +6,46 @@
   }
 }
 
+/* Screen Preview Paper Size Simulation */
+.preview-paper-a4 {
+  width: 100%;
+  max-width: 56rem;
+}
+
+.preview-paper-a5 {
+  width: 100%;
+  max-width: 44rem;
+}
+
+.preview-paper-a5 .print-container {
+  padding: 1.5rem !important;
+  font-size: 0.825rem !important;
+  line-height: 1.4 !important;
+}
+
+.preview-paper-a5 .print-container h2 {
+  font-size: 0.95rem !important;
+}
+
+.preview-paper-a5 .print-container table {
+  font-size: 0.75rem !important;
+}
+
+.preview-paper-a5 .print-container .h-16,
+.preview-paper-a5 .print-container .h-20,
+.preview-paper-a5 .print-container .h-24 {
+  height: 2.75rem !important;
+}
+
+.preview-paper-a5 .print-container .pt-6,
+.preview-paper-a5 .print-container .pt-8 {
+  padding-top: 0.75rem !important;
+}
+
+.preview-paper-a5 .print-container .space-y-4 > * + * {
+  margin-top: 0.6rem !important;
+}
+
 @media print {
   body {
     background-color: white !important;
@@ -26,11 +66,70 @@
   .print-container {
     width: 100% !important;
     max-width: 100% !important;
-    padding: 1.5cm 2cm !important;
+    padding: 1.2cm 1.8cm !important;
     margin: 0 auto !important;
     box-shadow: none !important;
     border: none !important;
     background: white !important;
+  }
+
+  /* Specific A5 paper print styling */
+  body.paper-size-a5 {
+    font-size: 8.5pt !important;
+    line-height: 1.25 !important;
+  }
+
+  body.paper-size-a5 .print-container {
+    padding: 0.4cm 0.6cm !important;
+  }
+
+  body.paper-size-a5 table {
+    font-size: 7.5pt !important;
+  }
+
+  body.paper-size-a5 th,
+  body.paper-size-a5 td {
+    padding: 2.5px 4.5px !important;
+  }
+
+  body.paper-size-a5 h2 {
+    font-size: 10.5pt !important;
+    margin-top: 3px !important;
+    margin-bottom: 2px !important;
+  }
+
+  body.paper-size-a5 .official-kop-surat img {
+    max-height: 80px !important;
+  }
+
+  body.paper-size-a5 .official-kop-surat {
+    margin-bottom: 6px !important;
+  }
+
+  body.paper-size-a5 .official-kop-surat .w-20 {
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+  }
+
+  body.paper-size-a5 .h-16,
+  body.paper-size-a5 .h-20,
+  body.paper-size-a5 .h-24 {
+    height: 2.25rem !important;
+  }
+
+  body.paper-size-a5 .pt-6,
+  body.paper-size-a5 .pt-8 {
+    padding-top: 0.5rem !important;
+  }
+
+  body.paper-size-a5 .my-4,
+  body.paper-size-a5 .my-6 {
+    margin-top: 0.25rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  body.paper-size-a5 .space-y-4 > * + * {
+    margin-top: 0.45rem !important;
   }
 
   .print-break-inside-avoid {
@@ -40,6 +139,6 @@
 
   @page {
     size: A4 portrait;
-    margin: 1.5cm 1.5cm 1.5cm 1.5cm;
+    margin: 1.2cm 1.5cm 1.2cm 1.5cm;
   }
 }

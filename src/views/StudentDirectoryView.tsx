@@ -18,6 +18,8 @@ import {
   Sparkles,
   Zap,
   RotateCcw,
+  GraduationCap,
+  Check,
 } from 'lucide-react';
 import { Student } from '../types';
 
@@ -52,20 +54,15 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
   const [onlyWatchlist, setOnlyWatchlist] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
 
-  // Form State for Add Student
+  // Form State for Add Student (NISN, Nama Orang Tua, Kontak Orang Tua removed)
   const initialFormData = {
-    nisn: '',
     name: '',
-    className: '',
-    selectedClass: 'X',
+    selectedClass: 'X' as string,
     customClass: '',
     isCustomClass: false,
     gender: 'L' as 'L' | 'P',
     phone: '',
-    parentName: '',
-    parentPhone: '',
     address: '',
     homeroomTeacher: '',
     notes: '',
@@ -86,13 +83,25 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
     return Array.from(set);
   }, [students]);
 
+  // List of existing homeroom teachers to provide auto-suggestions
+  const existingTeachers = useMemo(() => {
+    const set = new Set<string>();
+    students.forEach((s) => {
+      if (s.homeroomTeacher && s.homeroomTeacher.trim() && s.homeroomTeacher !== 'Wali Kelas') {
+        set.add(s.homeroomTeacher.trim());
+      }
+    });
+    return Array.from(set);
+  }, [students]);
+
   const filteredStudents = useMemo(() => {
     return students.filter((s) => {
       const searchLower = searchQuery.toLowerCase();
       const matchSearch =
         s.name.toLowerCase().includes(searchLower) ||
-        s.parentName.toLowerCase().includes(searchLower) ||
-        (s.className && s.className.toLowerCase().includes(searchLower));
+        (s.homeroomTeacher && s.homeroomTeacher.toLowerCase().includes(searchLower)) ||
+        (s.className && s.className.toLowerCase().includes(searchLower)) ||
+        (s.nisn && s.nisn.toLowerCase().includes(searchLower));
 
       const matchClass = classFilter === 'all' || s.className === classFilter;
       const matchWatchlist = !onlyWatchlist || s.isWatchlist;
@@ -113,23 +122,18 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalClassName = formData.className
-      ? formData.className.trim()
-      : formData.isCustomClass
-      ? formData.customClass.trim() || 'X'
+    const finalClassName = formData.isCustomClass
+      ? (formData.customClass.trim() || 'X')
       : formData.selectedClass;
 
     onAddStudent({
-      nisn: formData.nisn || undefined,
-      name: formData.name,
+      name: formData.name.trim(),
       className: finalClassName,
       gender: formData.gender,
-      phone: formData.phone,
-      parentName: formData.parentName,
-      parentPhone: formData.parentPhone,
-      address: formData.address,
-      homeroomTeacher: formData.homeroomTeacher || 'Wali Kelas',
-      notes: formData.notes,
+      homeroomTeacher: formData.homeroomTeacher.trim() || 'Wali Kelas',
+      phone: formData.phone.trim() || undefined,
+      address: formData.address.trim() || undefined,
+      notes: formData.notes.trim() || undefined,
       isWatchlist: formData.isWatchlist,
     });
 
@@ -146,15 +150,13 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
       : editingStudent.className;
 
     onUpdateStudent(editingStudent.id, {
-      name: editingStudent.name,
+      name: editingStudent.name.trim(),
       className: finalClassName,
       gender: editingStudent.gender,
-      phone: editingStudent.phone,
-      parentName: editingStudent.parentName,
-      parentPhone: editingStudent.parentPhone,
-      address: editingStudent.address,
-      homeroomTeacher: editingStudent.homeroomTeacher,
-      notes: editingStudent.notes,
+      homeroomTeacher: editingStudent.homeroomTeacher.trim() || 'Wali Kelas',
+      phone: editingStudent.phone?.trim() || undefined,
+      address: editingStudent.address?.trim() || undefined,
+      notes: editingStudent.notes?.trim() || undefined,
       isWatchlist: editingStudent.isWatchlist,
     });
     setEditingStudent(null);
@@ -192,7 +194,7 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
             <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari nama siswa, NISN, atau orang tua..."
+              placeholder="Cari nama siswa, rombel (X, XI IPA...), atau wali kelas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-emerald-700"
@@ -295,8 +297,8 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
                   <th className="py-3 px-4 w-12 text-center">No</th>
                   <th className="py-3 px-4 min-w-[200px]">Data Peserta Didik</th>
-                  <th className="py-3 px-4 min-w-[120px]">Rombel & Wali</th>
-                  <th className="py-3 px-4 min-w-[160px]">Orang Tua / Kontak</th>
+                  <th className="py-3 px-4 min-w-[130px]">Rombel / Tingkat</th>
+                  <th className="py-3 px-4 min-w-[180px]">Nama Wali Kelas</th>
                   <th className="py-3 px-4 min-w-[90px] text-center">Status</th>
                   <th className="py-3 px-4 min-w-[340px] text-right">
                     <span className="inline-flex items-center gap-1 text-emerald-900 font-bold">
@@ -338,28 +340,32 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
                             <div className="font-bold text-slate-900 group-hover:text-emerald-900 transition-colors">
                               {st.name}
                             </div>
-                            <div className="text-[11px] text-slate-500 font-mono tabular-nums">
-                              NISN: {st.nisn}
+                            <div className="text-[11px] text-slate-500">
+                              {st.gender === 'L' ? 'Laki-laki' : 'Perempuan'}
+                              {st.phone ? ` · WA: ${st.phone}` : ''}
                             </div>
                           </div>
                         </div>
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <div className="font-semibold text-slate-800">Kelas {st.className}</div>
-                        <div className="text-[11px] text-slate-500 truncate max-w-[140px]" title={st.homeroomTeacher}>
-                          Wali: {st.homeroomTeacher || '-'}
-                        </div>
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200/80">
+                          Kelas {st.className}
+                        </span>
                       </td>
 
                       <td className="py-3.5 px-4">
-                        <div className="font-medium text-slate-800 truncate max-w-[150px]">
-                          {st.parentName || '-'}
+                        <div className="flex items-center gap-1.5 font-semibold text-slate-800">
+                          <GraduationCap className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                          <span className="truncate max-w-[180px]" title={st.homeroomTeacher}>
+                            {st.homeroomTeacher || 'Belum Diatur'}
+                          </span>
                         </div>
-                        <div className="text-[11px] text-slate-500 font-mono tabular-nums flex items-center gap-1">
-                          <Phone className="w-3 h-3 text-slate-400" />
-                          <span>{st.parentPhone || '-'}</span>
-                        </div>
+                        {st.address && (
+                          <div className="text-[11px] text-slate-400 truncate max-w-[180px]" title={st.address}>
+                            {st.address}
+                          </div>
+                        )}
                       </td>
 
                       <td className="py-3.5 px-4 text-center">
@@ -437,7 +443,7 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
                             onClick={() => {
                               if (
                                 window.confirm(
-                                  `Hapus data siswa "${st.name}" (NISN: ${st.nisn})? Data ini akan dihapus untuk koreksi.`
+                                  `Hapus data siswa "${st.name}" (Kelas: ${st.className})? Data ini akan dihapus untuk koreksi.`
                                 )
                               ) {
                                 onDeleteStudent(st.id);
@@ -486,8 +492,9 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
                         <h3 className="text-xs font-bold text-slate-900 line-clamp-1 group-hover:text-emerald-900 transition-colors">
                           {st.name}
                         </h3>
-                        <p className="text-[11px] text-slate-500 font-mono tabular-nums">
-                          NISN: {st.nisn} · Kelas {st.className}
+                        <p className="text-[11px] text-slate-500">
+                          {st.gender === 'L' ? 'Laki-laki' : 'Perempuan'}
+                          {st.phone ? ` · ${st.phone}` : ''}
                         </p>
                       </div>
                     </div>
@@ -499,22 +506,16 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
                     )}
                   </div>
 
-                  <div className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-600 space-y-1">
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-600 space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Wali Murid:</span>
-                      <span className="font-medium text-slate-800 truncate max-w-[150px]">
-                        {st.parentName || '-'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-400">Kontak Ortu:</span>
-                      <span className="font-mono tabular-nums text-slate-700">
-                        {st.parentPhone || '-'}
+                      <span className="text-slate-400">Rombel:</span>
+                      <span className="font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Kelas {st.className}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-400">Wali Kelas:</span>
-                      <span className="text-slate-700 truncate max-w-[150px]">
+                      <span className="font-semibold text-slate-800 truncate max-w-[150px]" title={st.homeroomTeacher}>
                         {st.homeroomTeacher || '-'}
                       </span>
                     </div>
@@ -643,33 +644,89 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    NISN *
+              {/* Pemilihan Rombel / Tingkat Kelas */}
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-slate-800">
+                    Pilih Rombel / Tingkat Kelas *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="00789xxxxx"
-                    value={formData.nisn}
-                    onChange={(e) => setFormData({ ...formData, nisn: e.target.value })}
-                    className="w-full px-3 py-2 text-xs font-mono tabular-nums border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, isCustomClass: !formData.isCustomClass })}
+                    className="text-[11px] text-emerald-800 hover:text-emerald-900 font-medium hover:underline cursor-pointer"
+                  >
+                    {formData.isCustomClass ? '← Pilih dari Rombel Standar' : '+ Rombel Khusus / Lainnya'}
+                  </button>
                 </div>
 
-                <div>
+                {!formData.isCustomClass ? (
+                  <div>
+                    <div className="grid grid-cols-5 gap-2">
+                      {STUDENT_STANDARD_CLASSES.map((cls) => {
+                        const isSelected = formData.selectedClass === cls;
+                        return (
+                          <button
+                            key={cls}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, selectedClass: cls })}
+                            className={`py-2 px-1 text-center font-bold text-xs rounded-lg border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                              isSelected
+                                ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs ring-2 ring-emerald-500/30'
+                                : 'bg-white text-slate-700 border-slate-300 hover:border-emerald-600 hover:bg-emerald-50/50'
+                            }`}
+                          >
+                            <span>{cls}</span>
+                            {isSelected && <span className="text-[9px] text-emerald-200">✓ Terpilih</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1">
+                      <span>Rombel aktif yang dipilih:</span>
+                      <strong className="text-emerald-800 font-bold bg-emerald-100/70 px-1.5 py-0.2 rounded">
+                        Kelas {formData.selectedClass}
+                      </strong>
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ketik rombel khusus (Contoh: X-A, XI-MIPA 1, dsb)"
+                      value={formData.customClass}
+                      onChange={(e) => setFormData({ ...formData, customClass: e.target.value })}
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700 bg-white"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Nama Wali Kelas & Jenis Kelamin */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
                   <label className="block font-medium text-slate-700 mb-1">
-                    Kelas / Rombel *
+                    Nama Wali Kelas *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Contoh: X-E 2 / XI-IPA 2"
-                    value={formData.className}
-                    onChange={(e) => setFormData({ ...formData, className: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      list="teacher-suggestions-add"
+                      placeholder="Contoh: Budi Santoso, S.Pd."
+                      value={formData.homeroomTeacher}
+                      onChange={(e) => setFormData({ ...formData, homeroomTeacher: e.target.value })}
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700 bg-white"
+                    />
+                    <datalist id="teacher-suggestions-add">
+                      {existingTeachers.map((t) => (
+                        <option key={t} value={t} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Nama guru wali kelas untuk rombel ini
+                  </p>
                 </div>
 
                 <div>
@@ -681,68 +738,24 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value as 'L' | 'P' })}
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700 bg-white"
                   >
-                    <option value="L">Laki-laki</option>
-                    <option value="P">Perempuan</option>
+                    <option value="L">Laki-laki (LK)</option>
+                    <option value="P">Perempuan (PR)</option>
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    Nomor WhatsApp Siswa
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="0812-xxxx-xxxx"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    Nama Wali Kelas
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: Budi Santoso, S.Pd."
-                    value={formData.homeroomTeacher}
-                    onChange={(e) => setFormData({ ...formData, homeroomTeacher: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    Nama Orang Tua / Wali *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Nama Ayah / Ibu"
-                    value={formData.parentName}
-                    onChange={(e) => setFormData({ ...formData, parentName: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    Kontak WhatsApp Orang Tua *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="0813-xxxx-xxxx"
-                    value={formData.parentPhone}
-                    onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
-                </div>
+              {/* Kontak Siswa */}
+              <div>
+                <label className="block font-medium text-slate-700 mb-1">
+                  Nomor WhatsApp Siswa (Opsional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: 0812-xxxx-xxxx"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
+                />
               </div>
 
               <div>
@@ -839,35 +852,98 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    NISN *
+              {/* Pemilihan Rombel / Tingkat Kelas */}
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-slate-800">
+                    Pilih Rombel / Tingkat Kelas *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={editingStudent.nisn}
-                    onChange={(e) =>
-                      setEditingStudent({ ...editingStudent, nisn: e.target.value })
-                    }
-                    className="w-full px-3 py-2 text-xs font-mono tabular-nums border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setEditIsCustomClass(!editIsCustomClass)}
+                    className="text-[11px] text-emerald-800 hover:text-emerald-900 font-medium hover:underline cursor-pointer"
+                  >
+                    {editIsCustomClass ? '← Pilih dari Rombel Standar' : '+ Rombel Khusus / Lainnya'}
+                  </button>
                 </div>
 
-                <div>
+                {!editIsCustomClass ? (
+                  <div>
+                    <div className="grid grid-cols-5 gap-2">
+                      {STUDENT_STANDARD_CLASSES.map((cls) => {
+                        const isSelected = editingStudent.className === cls;
+                        return (
+                          <button
+                            key={cls}
+                            type="button"
+                            onClick={() =>
+                              setEditingStudent({ ...editingStudent, className: cls })
+                            }
+                            className={`py-2 px-1 text-center font-bold text-xs rounded-lg border transition-all cursor-pointer flex flex-col items-center justify-center gap-0.5 ${
+                              isSelected
+                                ? 'bg-emerald-800 text-white border-emerald-800 shadow-xs ring-2 ring-emerald-500/30'
+                                : 'bg-white text-slate-700 border-slate-300 hover:border-emerald-600 hover:bg-emerald-50/50'
+                            }`}
+                          >
+                            <span>{cls}</span>
+                            {isSelected && (
+                              <span className="text-[9px] text-emerald-200">✓ Terpilih</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1.5 flex items-center gap-1">
+                      <span>Rombel aktif siswa:</span>
+                      <strong className="text-emerald-800 font-bold bg-emerald-100/70 px-1.5 py-0.2 rounded">
+                        Kelas {editingStudent.className}
+                      </strong>
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ketik rombel khusus (Contoh: X-A, XI-MIPA 1, dsb)"
+                      value={editCustomClass}
+                      onChange={(e) => setEditCustomClass(e.target.value)}
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700 bg-white"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Nama Wali Kelas & Jenis Kelamin */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
                   <label className="block font-medium text-slate-700 mb-1">
-                    Kelas / Rombel *
+                    Nama Wali Kelas *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={editingStudent.className}
-                    onChange={(e) =>
-                      setEditingStudent({ ...editingStudent, className: e.target.value })
-                    }
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      list="teacher-suggestions-edit"
+                      placeholder="Contoh: Budi Santoso, S.Pd."
+                      value={editingStudent.homeroomTeacher}
+                      onChange={(e) =>
+                        setEditingStudent({
+                          ...editingStudent,
+                          homeroomTeacher: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700 bg-white"
+                    />
+                    <datalist id="teacher-suggestions-edit">
+                      {existingTeachers.map((t) => (
+                        <option key={t} value={t} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-0.5">
+                    Nama guru wali kelas untuk rombel ini
+                  </p>
                 </div>
 
                 <div>
@@ -884,81 +960,26 @@ export const StudentDirectoryView: React.FC<StudentDirectoryViewProps> = ({
                     }
                     className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700 bg-white"
                   >
-                    <option value="L">Laki-laki</option>
-                    <option value="P">Perempuan</option>
+                    <option value="L">Laki-laki (LK)</option>
+                    <option value="P">Perempuan (PR)</option>
                   </select>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    Nomor WhatsApp Siswa
-                  </label>
-                  <input
-                    type="text"
-                    value={editingStudent.phone}
-                    onChange={(e) =>
-                      setEditingStudent({ ...editingStudent, phone: e.target.value })
-                    }
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    Nama Wali Kelas
-                  </label>
-                  <input
-                    type="text"
-                    value={editingStudent.homeroomTeacher}
-                    onChange={(e) =>
-                      setEditingStudent({
-                        ...editingStudent,
-                        homeroomTeacher: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    Nama Orang Tua / Wali *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editingStudent.parentName}
-                    onChange={(e) =>
-                      setEditingStudent({
-                        ...editingStudent,
-                        parentName: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-medium text-slate-700 mb-1">
-                    Kontak WhatsApp Orang Tua *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={editingStudent.parentPhone}
-                    onChange={(e) =>
-                      setEditingStudent({
-                        ...editingStudent,
-                        parentPhone: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
-                  />
-                </div>
+              {/* Kontak Siswa */}
+              <div>
+                <label className="block font-medium text-slate-700 mb-1">
+                  Nomor WhatsApp Siswa (Opsional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Contoh: 0812-xxxx-xxxx"
+                  value={editingStudent.phone || ''}
+                  onChange={(e) =>
+                    setEditingStudent({ ...editingStudent, phone: e.target.value })
+                  }
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-700"
+                />
               </div>
 
               <div>

@@ -60,6 +60,7 @@ export const initialSchoolProfile: SchoolProfile = {
   kopFormat: 'gambar',
   letterheadImageUrl: DEFAULT_SURYA_BUANA_KOP_SVG,
   letterheadImageHeight: 140,
+  defaultPaperSize: 'A4',
 };
 
 export const initialStudents: Student[] = [

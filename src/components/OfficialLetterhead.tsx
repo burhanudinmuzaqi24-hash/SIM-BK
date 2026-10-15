@@ -9,6 +9,7 @@ interface OfficialLetterheadProps {
    */
   isPreprintedStationery?: boolean;
   formatOverride?: 'lengkap' | 'blanko' | 'gambar';
+  paperSize?: 'A4' | 'A5';
   className?: string;
 }
 
@@ -16,32 +17,40 @@ export const OfficialLetterhead: React.FC<OfficialLetterheadProps> = ({
   profile,
   isPreprintedStationery = false,
   formatOverride,
+  paperSize = 'A4',
   className = '',
 }) => {
+  const isA5 = paperSize === 'A5';
   const currentFormat = formatOverride || profile.kopFormat || 'gambar';
   const effectiveBlanko = isPreprintedStationery || currentFormat === 'blanko';
 
   if (effectiveBlanko) {
     return (
-      <div className={`mb-6 ${className}`}>
+      <div className={`${isA5 ? 'mb-3' : 'mb-6'} ${className}`}>
         {/* On screen, display an informative banner for the user */}
-        <div className="no-print border border-dashed border-amber-300 bg-amber-50 rounded-lg p-3 text-center text-xs text-amber-800">
-          <p className="font-semibold">Mode Kertas Berkop Aktif</p>
+        <div className="no-print border border-dashed border-amber-300 bg-amber-50 rounded-lg p-2.5 text-center text-xs text-amber-800">
+          <p className="font-semibold">Mode Kertas Berkop Aktif ({paperSize})</p>
           <p className="text-[11px] text-amber-700">
-            Kop surat digital disembunyikan. Area kosong setinggi ~3.5 cm dialokasikan agar hasil cetak pas dengan kertas berkop fisik dari sekolah.
+            Kop surat digital disembunyikan. Area kosong dialokasikan agar hasil cetak pas dengan kertas berkop fisik dari sekolah.
           </p>
         </div>
         {/* Physical blank spacer for printer */}
-        <div className="h-28 sm:h-32" aria-hidden="true" />
+        <div className={isA5 ? 'h-16 sm:h-20' : 'h-28 sm:h-32'} aria-hidden="true" />
       </div>
     );
   }
 
   // JIKA MODE GAMBAR / BANNER AKTIF:
   if (currentFormat === 'gambar' && profile.letterheadImageUrl) {
-    const maxHeight = profile.letterheadImageHeight ? `${profile.letterheadImageHeight}px` : '155px';
+    const defaultHeight = isA5 ? 90 : 155;
+    const maxHeight = profile.letterheadImageHeight
+      ? isA5
+        ? `${Math.min(profile.letterheadImageHeight, 95)}px`
+        : `${profile.letterheadImageHeight}px`
+      : `${defaultHeight}px`;
+
     return (
-      <div className={`official-kop-surat mb-5 w-full ${className}`}>
+      <div className={`official-kop-surat ${isA5 ? 'mb-2.5' : 'mb-5'} w-full ${className}`}>
         <img
           src={profile.letterheadImageUrl}
           alt="Kop Surat Resmi SMA Surya Buana Malang"
@@ -68,18 +77,18 @@ export const OfficialLetterhead: React.FC<OfficialLetterheadProps> = ({
   const website = profile.schoolWebsite || 'www.smaislamsuryabuana.sch.id';
 
   return (
-    <div className={`official-kop-surat mb-5 ${className}`}>
-      <div className="flex items-center justify-between gap-4 pb-2.5">
+    <div className={`official-kop-surat ${isA5 ? 'mb-2' : 'mb-5'} ${className}`}>
+      <div className={`flex items-center justify-between ${isA5 ? 'gap-2.5 pb-1' : 'gap-4 pb-2.5'}`}>
         {/* Left: Official Surya Buana Emblem / Logo */}
         <div className="shrink-0 flex items-center justify-center">
           {profile.logoUrl && profile.logoUrl.startsWith('http') ? (
             <img
               src={profile.logoUrl}
               alt="Logo SMA Surya Buana"
-              className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+              className={`${isA5 ? 'w-14 h-14' : 'w-20 h-20 sm:w-24 sm:h-24'} object-contain`}
             />
           ) : (
-            <div className="w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center">
+            <div className={`${isA5 ? 'w-14 h-14' : 'w-20 h-20 sm:w-24 sm:h-24'} flex items-center justify-center`}>
               {/* Authentic Emblem Vector for SMA Surya Buana */}
               <svg
                 viewBox="0 0 100 100"
@@ -147,17 +156,17 @@ export const OfficialLetterhead: React.FC<OfficialLetterheadProps> = ({
         {/* Center: Official Typography & Accreditation Details */}
         <div className="flex-1 text-center font-serif text-slate-950">
           {/* Baris 1: Yayasan */}
-          <h2 className="text-xs sm:text-[13px] font-bold tracking-wider uppercase text-slate-800">
+          <h2 className={`${isA5 ? 'text-[10px]' : 'text-xs sm:text-[13px]'} font-bold tracking-wider uppercase text-slate-800`}>
             {foundation}
           </h2>
 
           {/* Baris 2: Nama Sekolah Utama */}
-          <h1 className="text-base sm:text-xl md:text-[22px] font-black tracking-tight uppercase text-slate-950 my-0.5 leading-snug">
+          <h1 className={`${isA5 ? 'text-sm sm:text-base' : 'text-base sm:text-xl md:text-[22px]'} font-black tracking-tight uppercase text-slate-950 my-0.5 leading-snug`}>
             {schoolName}
           </h1>
 
           {/* Baris 3: Kategori, Akreditasi & Nomor Pokok */}
-          <p className="text-[10px] sm:text-[11.5px] font-bold text-slate-700 tracking-wide font-sans">
+          <p className={`${isA5 ? 'text-[8.5px]' : 'text-[10px] sm:text-[11.5px]'} font-bold text-slate-700 tracking-wide font-sans`}>
             {category && <span>{category} · </span>}
             <span className="text-emerald-900 font-extrabold">{accreditation}</span>
             <span className="text-slate-500"> | </span>
@@ -167,17 +176,17 @@ export const OfficialLetterhead: React.FC<OfficialLetterheadProps> = ({
           </p>
 
           {/* Baris 4: Unit Pelayanan BK */}
-          <p className="text-[11px] sm:text-xs font-black uppercase tracking-widest text-slate-900 font-sans mt-0.5">
+          <p className={`${isA5 ? 'text-[9px]' : 'text-[11px] sm:text-xs'} font-black uppercase tracking-widest text-slate-900 font-sans mt-0.5`}>
             {unitName}
           </p>
 
           {/* Baris 5: Alamat Lengkap */}
-          <p className="text-[9.5px] sm:text-[11px] text-slate-600 font-sans mt-0.5 leading-tight">
+          <p className={`${isA5 ? 'text-[8px]' : 'text-[9.5px] sm:text-[11px]'} text-slate-600 font-sans mt-0.5 leading-tight`}>
             {address}
           </p>
 
           {/* Baris 6: Telepon, Email, Website */}
-          <p className="text-[9px] sm:text-[10.5px] text-slate-600 font-sans leading-tight">
+          <p className={`${isA5 ? 'text-[7.5px]' : 'text-[9px] sm:text-[10.5px]'} text-slate-600 font-sans leading-tight`}>
             Telp: <span className="font-medium text-slate-800">{phone}</span> · Email:{' '}
             <span className="font-medium text-slate-800">{email}</span>
             {website && (
@@ -191,14 +200,14 @@ export const OfficialLetterhead: React.FC<OfficialLetterheadProps> = ({
 
         {/* Right: National / Counseling Symbol (BK Emblem on Right for Balanced Official Look) */}
         <div className="shrink-0 hidden sm:flex items-center justify-center">
-          <div className="w-16 h-16 rounded-full border-2 border-slate-900 flex flex-col items-center justify-center bg-slate-50 text-slate-900 font-sans p-1">
-            <span className="text-[9px] font-black tracking-wider text-emerald-800 uppercase">
+          <div className={`${isA5 ? 'w-12 h-12 p-0.5' : 'w-16 h-16 p-1'} rounded-full border-2 border-slate-900 flex flex-col items-center justify-center bg-slate-50 text-slate-900 font-sans`}>
+            <span className={`${isA5 ? 'text-[7.5px]' : 'text-[9px]'} font-black tracking-wider text-emerald-800 uppercase`}>
               ABKIN
             </span>
-            <span className="text-base font-black leading-none text-slate-950">
+            <span className={`${isA5 ? 'text-xs' : 'text-base'} font-black leading-none text-slate-950`}>
               BK
             </span>
-            <span className="text-[7.5px] font-bold tracking-tight text-slate-600 uppercase">
+            <span className={`${isA5 ? 'text-[6.5px]' : 'text-[7.5px]'} font-bold tracking-tight text-slate-600 uppercase`}>
               MALANG
             </span>
           </div>

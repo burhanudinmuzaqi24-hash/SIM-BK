@@ -273,12 +273,16 @@ export const ProblemReportView: React.FC<ProblemReportViewProps> = ({
                         Kasus {prob.severity}
                       </span>
                       <span className="text-xs font-bold text-slate-900">
-                        {student?.name || 'Siswa'} ({student?.className})
+                        {student?.name || 'Siswa'} (Kelas {student?.className || '-'})
                       </span>
-                      <span className="text-xs text-slate-400">·</span>
-                      <span className="text-xs text-slate-500 font-mono tabular-nums">
-                        NISN: {student?.nisn || '-'}
-                      </span>
+                      {student?.homeroomTeacher && (
+                        <>
+                          <span className="text-xs text-slate-400">·</span>
+                          <span className="text-xs text-slate-600">
+                            Wali: {student.homeroomTeacher}
+                          </span>
+                        </>
+                      )}
                     </div>
 
                     <h3 className="text-sm font-bold text-slate-900 mt-1">

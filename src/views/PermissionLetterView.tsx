@@ -1193,10 +1193,10 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
                                 </span>
                               )}
                             </div>
-                            <div className="text-[11px] text-slate-500 font-mono">
+                            <div className="text-[11px] text-slate-500">
                               {letter.studentIds && letter.studentIds.length > 1
                                 ? `Total ${letter.studentIds.length} Siswa Terdaftar`
-                                : `Kelas ${student?.className || '-'} · NISN: ${student?.nisn || '-'}`}
+                                : `Kelas ${student?.className || '-'}${student?.homeroomTeacher ? ` · Wali: ${student.homeroomTeacher}` : ''}`}
                             </div>
                           </td>
                           <td className="py-2.5 px-3 text-slate-800 max-w-sm">
@@ -1488,11 +1488,12 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
                             </span>
                             <span className="font-semibold text-slate-900">{st.name}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
-                            <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium font-sans">
+                          <div className="flex items-center gap-2 text-[11px] text-slate-500">
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 font-semibold font-sans border border-emerald-200/60">
                               Kelas {st.className}
                             </span>
-                            <span>NISN: {st.nisn || '-'}</span>
+                            {st.homeroomTeacher && <span>Wali: {st.homeroomTeacher}</span>}
+                            {st.nisn && <span className="font-mono text-slate-400">NISN: {st.nisn}</span>}
                           </div>
                         </div>
                       );
@@ -1632,39 +1633,21 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Jabatan/Peran Siswa di Organisasi & Durasi */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block font-medium text-slate-700 mb-1">
-                        Jabatan / Penugasan Siswa di Organisasi *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Contoh: Ketua Panitia / Sekretaris / Anggota Delegasi"
-                        value={formData.studentRoleInOrg}
-                        onChange={(e) =>
-                          setFormData({ ...formData, studentRoleInOrg: e.target.value })
-                        }
-                        className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-medium text-slate-700 mb-1">
-                        Cakupan / Durasi Dispensasi KBM *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Contoh: Sepanjang Jam KBM (Jam 1 s.d. 8) atau 08:00 - 13:30 WIB"
-                        value={formData.activityDuration}
-                        onChange={(e) =>
-                          setFormData({ ...formData, activityDuration: e.target.value })
-                        }
-                        className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white"
-                      />
-                    </div>
+                  {/* Cakupan / Durasi Dispensasi KBM */}
+                  <div>
+                    <label className="block font-medium text-slate-700 mb-1">
+                      Cakupan / Durasi Dispensasi KBM *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Contoh: Sepanjang Jam KBM (Jam 1 s.d. 8) atau 08:00 - 13:30 WIB"
+                      value={formData.activityDuration}
+                      onChange={(e) =>
+                        setFormData({ ...formData, activityDuration: e.target.value })
+                      }
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white"
+                    />
                   </div>
 
                   {/* Nama Kegiatan & Keperluan */}
@@ -1699,11 +1682,11 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
                     />
                   </div>
 
-                  {/* Pengurus Organisasi Penandatangan */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Pengurus Organisasi Pemohon */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block font-medium text-slate-700 mb-1">
-                        Nama Ketua Organisasi / Panitia
+                        Nama Ketua Panitia / Pengurus Organisasi Pemohon
                       </label>
                       <input
                         type="text"
@@ -1718,26 +1701,11 @@ export const PermissionLetterView: React.FC<PermissionLetterViewProps> = ({
 
                     <div>
                       <label className="block font-medium text-slate-700 mb-1">
-                        Jabatan Ketua Organisasi
+                        Guru Pembina Organisasi (Opsional)
                       </label>
                       <input
                         type="text"
-                        placeholder="Contoh: Ketua OSIS / Ketua Panitia"
-                        value={formData.orgLeaderRole}
-                        onChange={(e) =>
-                          setFormData({ ...formData, orgLeaderRole: e.target.value })
-                        }
-                        className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-medium text-slate-700 mb-1">
-                        Pembina Organisasi / Waka
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Contoh: Ilmi Muhadiatil Izza, S.Pd."
+                        placeholder="Contoh: Pembina OSIS / Ekstrakurikuler"
                         value={formData.orgAdvisorName}
                         onChange={(e) =>
                           setFormData({ ...formData, orgAdvisorName: e.target.value })

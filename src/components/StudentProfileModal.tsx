@@ -93,8 +93,8 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-500 font-mono tabular-nums">
-                NISN: {student.nisn} · Kelas {student.className} · Wali: {student.homeroomTeacher}
+              <p className="text-xs text-slate-500">
+                {student.nisn ? `NISN: ${student.nisn} · ` : ''}Kelas {student.className} · Wali Kelas: {student.homeroomTeacher}
               </p>
             </div>
           </div>
@@ -116,7 +116,7 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
                 onClick={() => {
                   if (
                     window.confirm(
-                      `Hapus profil data siswa "${student.name}" (NISN: ${student.nisn})? Tindakan ini untuk koreksi data.`
+                      `Hapus profil data siswa "${student.name}" (Kelas: ${student.className})? Tindakan ini untuk koreksi data.`
                     )
                   ) {
                     onDeleteStudent(student.id);
@@ -142,8 +142,12 @@ export const StudentProfileModal: React.FC<StudentProfileModalProps> = ({
         {/* Action Bar */}
         <div className="px-6 py-2.5 bg-slate-100/70 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0">
           <div className="flex items-center gap-4 text-xs text-slate-600">
-            <span>Kontak Siswa: <strong>{student.phone}</strong></span>
-            <span>Orang Tua: <strong>{student.parentName} ({student.parentPhone})</strong></span>
+            <span>Rombel: <strong className="text-emerald-800">Kelas {student.className}</strong></span>
+            <span>Wali Kelas: <strong>{student.homeroomTeacher}</strong></span>
+            {student.phone && <span>Kontak: <strong>{student.phone}</strong></span>}
+            {student.parentName && (
+              <span>Orang Tua: <strong>{student.parentName} {student.parentPhone ? `(${student.parentPhone})` : ''}</strong></span>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5">

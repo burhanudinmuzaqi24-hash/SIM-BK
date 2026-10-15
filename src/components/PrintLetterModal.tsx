@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Printer, X, Edit3, Check, RotateCcw, Users } from 'lucide-react';
-import { PermissionLetter, Student, SchoolProfile } from '../types';
+import { Printer, X, Edit3, Check, RotateCcw, Users, FileText } from 'lucide-react';
+import { PermissionLetter, Student, SchoolProfile, PaperSize } from '../types';
 import { formatDateIndonesian } from '../utils/storage';
 import { OfficialLetterhead } from './OfficialLetterhead';
 import { LetterheadToolbarControls } from './LetterheadToolbarControls';
@@ -29,6 +29,29 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
   onUpdateLetterNumber,
 }) => {
   if (!isOpen) return null;
+
+  // Paper size state (A4 or A5)
+  const [paperSize, setPaperSize] = useState<PaperSize>(() => {
+    return profile.defaultPaperSize || 'A4';
+  });
+
+  const isA5 = paperSize === 'A5';
+
+  useEffect(() => {
+    if (paperSize === 'A5') {
+      document.body.classList.add('paper-size-a5');
+    } else {
+      document.body.classList.remove('paper-size-a5');
+    }
+    return () => {
+      document.body.classList.remove('paper-size-a5');
+    };
+  }, [paperSize]);
+
+  const handlePaperSizeChange = (newSize: PaperSize) => {
+    setPaperSize(newSize);
+    onUpdateProfile?.({ defaultPaperSize: newSize });
+  };
 
   // Active Letter Number state with quick manual override
   const [activeNumber, setActiveNumber] = useState(letter.letterNumber);
@@ -102,7 +125,15 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden my-8">
+      {/* Dynamic Injected CSS for @page and print layout sizing */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @page {
+          size: ${paperSize === 'A5' ? 'A5 portrait' : 'A4 portrait'} !important;
+          margin: ${paperSize === 'A5' ? '0.7cm 0.9cm 0.7cm 0.9cm' : '1.2cm 1.5cm 1.2cm 1.5cm'} !important;
+        }
+      `}} />
+
+      <div className={`relative w-full ${isA5 ? 'preview-paper-a5' : 'preview-paper-a4'} bg-white rounded-xl shadow-2xl overflow-hidden my-8 transition-all`}>
         {/* Modal Toolbar (hidden when printing) */}
         <div className="no-print flex flex-col gap-2.5 px-6 py-4 border-b border-slate-200 bg-slate-50 font-sans">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -115,12 +146,47 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
                     Kolektif ({participantStudents.length} Siswa)
                   </span>
                 )}
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${isA5 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-900 border border-emerald-300'}`}>
+                  Ukuran {paperSize}
+                </span>
               </h3>
               <p className="text-xs text-slate-500">
-                Format standar surat resmi Guru BK Muhammad Burhanudin Muzaqi, M.Psi. (Siap cetak A4)
+                Format standar surat resmi Guru BK Muhammad Burhanudin Muzaqi, M.Psi. (Siap cetak kertas <strong>{paperSize}</strong> · {paperSize === 'A5' ? '148×210 mm (Buku / Setengah Folio)' : '210×297 mm (Standar Surat Dinas)'})
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2.5">
+              {/* Paper Size Selector: A4 vs A5 */}
+              <div className="flex items-center gap-1 bg-white p-1 rounded-lg border border-slate-300 shadow-2xs">
+                <span className="text-[11px] font-bold text-slate-600 px-1.5 flex items-center gap-1">
+                  <FileText className="w-3.5 h-3.5 text-emerald-800" />
+                  Kertas:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handlePaperSizeChange('A4')}
+                  className={`px-2.5 py-1 text-xs font-bold rounded cursor-pointer transition-all ${
+                    paperSize === 'A4'
+                      ? 'bg-emerald-800 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                  title="Ukuran Cetak A4 (210 x 297 mm) - Standar Surat Dinas Resmi Kemdikbud"
+                >
+                  A4 <span className="text-[10px] opacity-75 font-normal hidden sm:inline">(210×297)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePaperSizeChange('A5')}
+                  className={`px-2.5 py-1 text-xs font-bold rounded cursor-pointer transition-all ${
+                    paperSize === 'A5'
+                      ? 'bg-emerald-800 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                  title="Ukuran Cetak A5 (148 x 210 mm) - Format Setengah Folio / Buku (Ringkas & Hemat Kertas)"
+                >
+                  A5 <span className="text-[10px] opacity-75 font-normal hidden sm:inline">(148×210)</span>
+                </button>
+              </div>
+
               {/* Toolbar Kontrol Kop Surat: Kop Gambar, Kop Teks, Kertas Berkop & Upload Gambar */}
               <LetterheadToolbarControls
                 profile={profile}
@@ -133,7 +199,7 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
                 className="flex items-center gap-1.5 px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                Cetak / Simpan PDF
+                Cetak / Simpan PDF ({paperSize})
               </button>
               <button
                 onClick={onClose}
@@ -208,9 +274,9 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
         </div>
 
         {/* Printable Document Area */}
-        <div className="print-container p-8 sm:p-12 text-slate-900 bg-white font-serif">
+        <div className={`print-container ${isA5 ? 'p-5 sm:p-7 text-xs' : 'p-8 sm:p-12 text-sm leading-relaxed'} text-slate-900 bg-white font-serif transition-all`}>
           {/* Header Kop Surat Resmi SMA Surya Buana Malang */}
-          <OfficialLetterhead profile={profile} />
+          <OfficialLetterhead profile={profile} paperSize={paperSize} />
 
           {/* ========================================================================= */}
           {/* FORMAT 0: SURAT IZIN DISPENSASI KEGIATAN ORGANISASI (/BK-SDO/)           */}
@@ -258,7 +324,7 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
               <p className="text-justify pt-1">
                 Dengan hormat,
                 <br />
-                Berdasarkan surat permohonan dispensasi resmi yang diajukan oleh pengurus/panitia <strong>{letter.organizationName || 'Organisasi Siswa'}</strong> sebagaimana tercantum di atas, pihak Bimbingan dan Konseling (BK) bersama Kesiswaan memberikan rekomendasi dan izin dispensasi kepada {hasMultiple ? 'para peserta didik berikut' : 'peserta didik berikut'} untuk meninggalkan Kegiatan Belajar Mengajar (KBM) sementara guna menjalankan tugas organisasi:
+                Berdasarkan surat permohonan dispensasi resmi yang diajukan oleh pengurus/panitia <strong>{letter.organizationName || 'Organisasi Siswa'}</strong> sebagaimana tercantum di atas, pihak Bimbingan dan Konseling (BK) memberikan izin dispensasi kepada {hasMultiple ? 'para peserta didik berikut' : 'peserta didik berikut'} untuk meninggalkan Kegiatan Belajar Mengajar (KBM) sementara guna menjalankan tugas organisasi:
               </p>
 
               {/* Multi-student Participant Table or Single-Student Box */}
@@ -272,9 +338,8 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
                       <tr className="bg-slate-100 border-b border-slate-900 text-center font-bold">
                         <th className="border border-slate-900 py-1.5 px-2 w-8">No</th>
                         <th className="border border-slate-900 py-1.5 px-3">Nama Lengkap Siswa</th>
-                        <th className="border border-slate-900 py-1.5 px-2 w-24 text-center">Kelas</th>
-                        <th className="border border-slate-900 py-1.5 px-3 w-28 text-center">NISN</th>
-                        <th className="border border-slate-900 py-1.5 px-3">Jabatan / Peran</th>
+                        <th className="border border-slate-900 py-1.5 px-2 w-28 text-center">Kelas</th>
+                        <th className="border border-slate-900 py-1.5 px-3 w-32 text-center">NISN</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -284,9 +349,6 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
                           <td className="border border-slate-900 py-1 px-3 font-semibold text-slate-900">{st.name}</td>
                           <td className="border border-slate-900 py-1 px-2 text-center font-medium">{st.className}</td>
                           <td className="border border-slate-900 py-1 px-3 text-center font-mono">{st.nisn || '-'}</td>
-                          <td className="border border-slate-900 py-1 px-3 text-slate-700">
-                            {idx === 0 && letter.studentRoleInOrg ? letter.studentRoleInOrg : 'Anggota / Panitia Pelaksana'}
-                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -295,16 +357,16 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
                   {/* Activity Details for Multi-Students */}
                   <div className="space-y-1 pl-4 py-2 bg-slate-50/60 rounded-md border border-slate-200/80">
                     <div className="grid grid-cols-4">
+                      <span className="text-slate-600 font-medium">Hari / Tanggal Kegiatan</span>
+                      <span className="col-span-3 font-semibold text-slate-900">: {formatDateIndonesian(letter.date)}</span>
+                    </div>
+                    <div className="grid grid-cols-4">
                       <span className="text-slate-600 font-medium">Nama Kegiatan</span>
                       <span className="col-span-3 font-medium">: {letter.reason || letter.destinationOrActivity}</span>
                     </div>
                     <div className="grid grid-cols-4">
                       <span className="text-slate-600 font-medium">Lokasi / Tempat</span>
                       <span className="col-span-3">: {letter.destinationOrActivity || letter.incidentPlace || 'Lingkungan SMA Surya Buana Malang'}</span>
-                    </div>
-                    <div className="grid grid-cols-4">
-                      <span className="text-slate-600 font-medium">Hari / Tanggal</span>
-                      <span className="col-span-3">: {formatDateIndonesian(letter.date)}</span>
                     </div>
                     <div className="grid grid-cols-4">
                       <span className="text-slate-600 font-medium">Waktu / Durasi</span>
@@ -327,8 +389,8 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
                     <span className="col-span-3 font-semibold">: {student?.className || '-'}</span>
                   </div>
                   <div className="grid grid-cols-4">
-                    <span className="text-slate-600 font-medium">Jabatan / Peran</span>
-                    <span className="col-span-3 font-semibold text-emerald-950">: {letter.studentRoleInOrg || 'Pengurus / Panitia Pelaksana Organisasi'}</span>
+                    <span className="text-slate-600 font-medium">Hari / Tanggal Kegiatan</span>
+                    <span className="col-span-3 font-semibold text-slate-900">: {formatDateIndonesian(letter.date)}</span>
                   </div>
                   <div className="grid grid-cols-4">
                     <span className="text-slate-600 font-medium">Nama Kegiatan</span>
@@ -337,10 +399,6 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
                   <div className="grid grid-cols-4">
                     <span className="text-slate-600 font-medium">Lokasi / Tempat</span>
                     <span className="col-span-3">: {letter.destinationOrActivity || letter.incidentPlace || 'Lingkungan SMA Surya Buana Malang'}</span>
-                  </div>
-                  <div className="grid grid-cols-4">
-                    <span className="text-slate-600 font-medium">Hari / Tanggal</span>
-                    <span className="col-span-3">: {formatDateIndonesian(letter.date)}</span>
                   </div>
                   <div className="grid grid-cols-4">
                     <span className="text-slate-600 font-medium">Waktu / Durasi</span>
@@ -373,26 +431,17 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
                 Demikian surat izin dispensasi ini dibuat dan diberikan agar dapat dipergunakan sebagaimana mestinya. Atas perhatian, pengertian, dan kerja sama Bapak/Ibu Guru, kami mengucapkan terima kasih.
               </p>
 
-              {/* Tanda Tangan: Ketua Panitia/Organisasi, Pembina/Waka, Guru BK */}
-              <div className="grid grid-cols-3 gap-4 text-center text-xs pt-4 print-break-inside-avoid font-sans">
+              {/* Tanda Tangan: Pihak BK dan Ketua Panitia/Organisasi (Kesiswaan dan Jabatan Dihapus) */}
+              <div className="grid grid-cols-2 gap-8 text-center text-xs pt-6 print-break-inside-avoid font-sans">
                 <div>
-                  <p className="text-slate-600">Ketua Panitia / Organisasi</p>
-                  <p className="font-semibold text-slate-900">{letter.orgLeaderRole || 'Ketua OSIS'}</p>
+                  <p className="text-slate-700">Ketua Panitia / Organisasi</p>
                   <div className="h-16"></div>
                   <p className="font-bold underline text-slate-900">
                     ( {letter.orgLeaderName || '.............................................'} )
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-600">Guru Pembina / Waka</p>
-                  <p className="font-semibold text-slate-900">Kesiswaan</p>
-                  <div className="h-16"></div>
-                  <p className="font-bold underline text-slate-900">
-                    {letter.orgAdvisorName || letter.wakaKesiswaanName || 'Ilmi Muhadiatil Izza, S.Pd.'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-slate-600">{profile.regencyCity || 'Malang'}, {formatDateIndonesian(letter.date)}</p>
+                  <p className="text-slate-700">{profile.regencyCity || 'Malang'}, {formatDateIndonesian(letter.date)}</p>
                   <p className="font-semibold text-slate-900">Guru Bimbingan Konseling</p>
                   <div className="h-16"></div>
                   <p className="font-bold underline text-slate-900">
@@ -628,6 +677,10 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
 
                   <div className="space-y-1 pl-4 py-2 bg-slate-50/60 rounded-md border border-slate-200/80">
                     <div className="grid grid-cols-4">
+                      <span className="text-slate-600 font-medium">Hari / Tanggal Izin</span>
+                      <span className="col-span-3 font-semibold text-slate-900">: {formatDateIndonesian(letter.date)}</span>
+                    </div>
+                    <div className="grid grid-cols-4">
                       <span className="text-slate-600 font-medium">Keperluan</span>
                       <span className="col-span-3">: {letter.reason}</span>
                     </div>
@@ -650,6 +703,10 @@ export const PrintLetterModal: React.FC<PrintLetterModalProps> = ({
                   <div className="grid grid-cols-4">
                     <span className="text-slate-600 font-medium">Kelas</span>
                     <span className="col-span-3 font-semibold">: {student?.className || '-'}</span>
+                  </div>
+                  <div className="grid grid-cols-4">
+                    <span className="text-slate-600 font-medium">Hari / Tanggal Izin</span>
+                    <span className="col-span-3 font-semibold text-slate-900">: {formatDateIndonesian(letter.date)}</span>
                   </div>
                   <div className="grid grid-cols-4">
                     <span className="text-slate-600 font-medium">Keperluan</span>
